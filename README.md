@@ -1,5 +1,7 @@
 # AlertFlow
 
+![AlertFlow demo](demo.svg)
+
 AI-powered on-call assistant. Paste an alert → get severity, root cause, and a remediation runbook in seconds.
 
 Built on Claude Haiku for cost efficiency. Runs as a CLI or an HTTP API. Optionally posts to Discord or Slack.
