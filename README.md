@@ -1,6 +1,6 @@
 # AlertFlow
 
-![AlertFlow demo](demo.svg)
+![AlertFlow demo](demo.png)
 
 AI-powered on-call assistant. Paste an alert → get severity, root cause, and a remediation runbook in seconds.
 
