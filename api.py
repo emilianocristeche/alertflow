@@ -46,6 +46,11 @@ def analyze(req: AlertRequest):
     except anthropic.APIError as e:
         log.warning("LLM call failed: %s", e)
         raise HTTPException(status_code=502, detail="LLM request failed")
+    except Exception:
+        # Anything else (e.g. missing API key): full traceback in the logs,
+        # nothing internal in the response.
+        log.exception("Unexpected error analyzing alert")
+        raise HTTPException(status_code=500, detail="Internal error analyzing the alert")
 
     notifications = notify_all(result, req.alert) if req.notify else {}
     return AnalyzeResponse(**result.model_dump(), notifications=notifications)

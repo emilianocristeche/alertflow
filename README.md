@@ -93,6 +93,7 @@ unless `notify` is true.
 |---|---|
 | `422` | `alert` missing, blank, or longer than 4000 characters |
 | `502` | The model's reply is not valid JSON or does not match the schema, or the Anthropic API call fails. The raw reply is logged, not returned. |
+| `500` | Any other error (e.g. missing API key). The traceback is logged; the response only says `Internal error analyzing the alert`. |
 
 A failed Discord/Slack webhook does **not** fail the request: the analysis is
 returned and `notifications` says what happened, e.g.
@@ -133,6 +134,10 @@ docker-compose up
 
 API available at `http://localhost:8000`.
 
+The container runs as an unprivileged user (uid 10001). `.dockerignore` keeps
+`.env` (and your API key) out of the image; docker-compose passes it at runtime
+via `env_file`.
+
 ---
 
 ## Environment Variables
@@ -166,7 +171,7 @@ event loop.
 ## Running Tests
 
 ```bash
-pytest -q    # 31 tests
+pytest -q    # 32 tests
 ```
 
 Only the network edges are faked (`client.messages.create` and `httpx.post`);
@@ -174,6 +179,10 @@ the parsing and validation code runs for real. The suite feeds malformed model
 replies (invalid or truncated JSON, fenced JSON, wrong labels, wrong runbook
 length, missing fields) and checks they are rejected, plus webhook failures
 and the API's error codes. No API key needed.
+
+CI (`.github/workflows/ci.yml`) runs the tests on Python 3.11 (same as the
+Dockerfile), builds the image, checks it doesn't run as root and doesn't
+contain `.env`, and checks that `/health` answers.
 
 ---
 

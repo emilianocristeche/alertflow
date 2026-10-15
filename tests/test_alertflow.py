@@ -183,3 +183,13 @@ def test_api_webhook_failure_still_returns_analysis(mock_create, mock_post, monk
     assert r.status_code == 200
     assert r.json()["severity"] == "P1"
     assert r.json()["notifications"] == {"discord": "failed: ConnectTimeout", "slack": "skipped"}
+
+
+@patch("llm.client.messages.create", side_effect=RuntimeError("db password is hunter2"))
+def test_api_unexpected_error_is_logged_and_generic(mock_create, caplog):
+    with caplog.at_level(logging.ERROR, logger="api"):
+        r = client.post("/analyze", json={"alert": "x"})
+    assert r.status_code == 500
+    assert r.json() == {"detail": "Internal error analyzing the alert"}
+    assert "hunter2" not in r.text
+    assert "hunter2" in caplog.text      # the operator still sees the cause
