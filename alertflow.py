@@ -8,19 +8,19 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from llm import analyze_alert
-from webhook import send_discord, send_slack
+from llm import AlertAnalysis, analyze_alert  # noqa: E402
+from webhook import notify_all  # noqa: E402
 
 _SEVERITY_ICONS = {"P1": "🔴", "P2": "🟡", "P3": "🟢"}
 
 
-def _print_result(result: dict) -> None:
-    icon = _SEVERITY_ICONS.get(result["severity"], "⚪")
-    print(f"\n{icon}  Severity:   {result['severity']}")
-    print(f"    Category:  {result['root_cause_category']}")
-    print(f"    Summary:   {result['summary']}\n")
+def _print_result(result: AlertAnalysis) -> None:
+    icon = _SEVERITY_ICONS.get(result.severity, "⚪")
+    print(f"\n{icon}  Severity:   {result.severity}")
+    print(f"    Category:  {result.root_cause_category}")
+    print(f"    Summary:   {result.summary}\n")
     print("    Runbook:")
-    for i, step in enumerate(result["runbook"], 1):
+    for i, step in enumerate(result.runbook, 1):
         print(f"      {i}. {step}")
     print()
 
@@ -46,11 +46,11 @@ def main() -> None:
         sys.exit(1)
 
     if args.notify:
-        send_discord(result, args.alert)
-        send_slack(result, args.alert)
+        for channel, status in notify_all(result, args.alert).items():
+            print(f"{channel}: {status}", file=sys.stderr)
 
     if args.as_json:
-        print(json.dumps(result, indent=2))
+        print(json.dumps(result.model_dump(), indent=2))
     else:
         _print_result(result)
 

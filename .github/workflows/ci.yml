@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"   # same as the Dockerfile
+      - run: pip install -r requirements.txt
+      - run: pytest -q
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t alertflow .
+      - name: Container does not run as root
+        run: test "$(docker run --rm alertflow id -u)" != "0"
+      - name: .env is not baked into the image
+        run: |
+          echo "ANTHROPIC_API_KEY=should-not-ship" > .env
+          docker build -t alertflow-envcheck .
+          ! docker run --rm alertflow-envcheck test -e /app/.env
+      - name: API starts and answers /health
+        run: |
+          docker run -d --name af -p 8000:8000 -e ANTHROPIC_API_KEY=dummy alertflow
+          for i in $(seq 1 30); do curl -fs localhost:8000/health && exit 0; sleep 1; done
+          docker logs af; exit 1
